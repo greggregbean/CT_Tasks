@@ -1,7 +1,6 @@
-CT_Tasks
-backup
-compile-useless
-osnovy_operasionnix_sistem_karpov.pdf
-seminars
-simple-useless
-КТ_презентация_2022_short (1).pdf
+1sem
+2sem
+4sem
+5sem
+6sem
+8sem
