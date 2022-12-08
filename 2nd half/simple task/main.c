@@ -8,10 +8,13 @@
 #include <sys/mman.h>
 #include <dirent.h>
 
+#define FILE_NAME 1000
+#define FILE_SIZE 1000000
+
 int main(int argc, char* argv[]) {
-    char file[100] = {'\0'};
-    char dir[100] = {'\0'};
-    char path[200] = {'\0'};
+    char file[FILE_NAME] = {'\0'};
+    char dir[FILE_NAME] = {'\0'};
+    char path[FILE_NAME * 2] = {'\0'};
 
     if(argv[1] != NULL) {
         strcpy(file, argv[1]);
@@ -35,11 +38,17 @@ int main(int argc, char* argv[]) {
     printf("Full pass: \"%s\".\n", path);
 
     struct stat info;
-    int res_of_stat = stat(path, &info);
 
-    if(res_of_stat == 0) {
+    if(stat(path, &info) == 0) {
         printf("File is already existing. \n");
         exit(0);
+    }
+
+    char cur_dir_file [FILE_NAME] = {"./"};
+    strcat(cur_dir_file, file);
+
+    if(stat(cur_dir_file, &info) == 0) {
+        remove(cur_dir_file);
     }
 
     int fd = open(file, O_CREAT | O_RDWR | O_EXCL, 0666);
@@ -48,12 +57,12 @@ int main(int argc, char* argv[]) {
         exit(-1);
     }
 
-    if (ftruncate(fd, 100000) < 0) {
+    if (ftruncate(fd, FILE_SIZE) < 0) {
         printf("Failed to ftruncate. \n");
         exit(-1);
     };
 
-    char* ptr = (char*) mmap(NULL, 100000, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+    char* ptr = (char*) mmap(NULL, FILE_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
         printf("Failed to map. \n");
         exit(-1);
@@ -63,7 +72,11 @@ int main(int argc, char* argv[]) {
 
     char* tmpptr = ptr;
 
-    DIR* cur_dir = opendir(dir);
+    DIR* cur_dir;
+    if((cur_dir = opendir(dir)) == NULL) {
+        printf("Failed to open \"%s\". \n", dir);
+        exit(-1);
+    }
 
     struct dirent* next_dir;
 
@@ -71,12 +84,11 @@ int main(int argc, char* argv[]) {
         printf("\"%s\" \n", next_dir -> d_name);
         strcat(tmpptr, next_dir -> d_name);
         strcat(tmpptr, "\n");
-        tmpptr += (strlen(next_dir -> d_name) + 1);
     }
 
     closedir(cur_dir);
 
-    if(munmap(ptr, 100000) < 0) {
+    if(munmap(ptr, FILE_SIZE) < 0) {
         printf("Failed to munmap.\n");
         exit(-1);
     }
